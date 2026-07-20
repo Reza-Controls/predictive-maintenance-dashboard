@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+
+# Project runtime files (don't commit generated data/logs)
+sensor_data.db
+*.log
+
+# OS/editor cruft
+.DS_Store
+.vscode/
+
+*.docx ~$* *.png

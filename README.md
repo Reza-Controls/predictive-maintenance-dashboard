@@ -4,6 +4,13 @@ A simulated end-to-end predictive maintenance pipeline for a motor/pump, built t
 demonstrate the OT (PLC/Modbus) → IT (data/analytics/dashboard) bridge that
 condition-based maintenance systems rely on in industry.
 
+## Demo
+
+![Sensor trends with anomaly detection](screenshots/dashboard_output.gif)
+
+*Live sensor trends (vibration, temperature, current) with red X markers showing
+where the rolling z-score detector flagged an anomaly episode.*
+
 ## Problem statement
 
 Unplanned motor/pump failures are expensive and often preceded by detectable
@@ -15,13 +22,7 @@ to see it.
 
 ## Architecture
 
-```
-plc_simulator.py  --(Modbus TCP, port 5020)-->  modbus_client.py  -->  sensor_data.db (SQLite)
-                                                        |                      |
-                                                 anomaly detection     read by dashboard
-                                                 (rolling z-score)             |
-                                                                        dashboard.py (Streamlit)
-```
+![Architecture diagram](architecture.svg)
 
 - **`plc_simulator.py`** — Stands in for a real PLC. Generates realistic
   vibration (mm/s), temperature (°C), and current (A) values with natural
@@ -86,6 +87,34 @@ across sensors (like the simulator's "bearing wear" pattern, which nudges all
 three sensors slightly rather than spiking one). That trade-off — simple and
 explainable vs. multivariate but harder to interpret — is worth being able to
 talk through in an interview.
+
+## Methodology
+
+| Stage | Method | Key parameters |
+|---|---|---|
+| Data acquisition | Modbus TCP polling | 2s poll interval, 4 holding registers (vibration, temperature, current, PLC health) |
+| Baseline detector | Rolling z-score, per sensor | 30-sample rolling window, flag if \|z\| > 3.0, 10-sample minimum before flagging |
+| Commissioning | Burn-in period | No anomalies injected for first 20 ticks (~40s) so the baseline settles cleanly |
+| v2 detector | Isolation Forest (unsupervised) | 200 estimators, contamination = 0.1, trained on vibration + temperature + current jointly |
+| Evaluation | Agreement analysis | Compares z-score vs. Isolation Forest flags: both / z-only / ML-only / neither |
+
+## Results
+
+*(Numbers below are from a sample run — replace with your own after running the pipeline for a few minutes; `ml_anomaly_detector.py` prints these automatically.)*
+
+| Metric | Example value |
+|---|---|
+| Total readings analyzed | 75 |
+| Anomalies flagged by z-score | 8 |
+| Flagged by both z-score and Isolation Forest | 5 |
+| Flagged by z-score only | 3 |
+| Flagged by Isolation Forest only | 3 |
+
+The disagreement between methods is the interesting result here, not a flaw:
+the z-score detector catches sharp single-sensor spikes reliably, while
+Isolation Forest is better positioned to catch the "bearing wear" pattern,
+where all three sensors shift only slightly but *together* in a way no single
+sensor's threshold would flag on its own.
 
 ## What I'd do differently at production scale
 

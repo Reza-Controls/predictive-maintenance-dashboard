@@ -13,4 +13,6 @@ sensor_data.db
 .DS_Store
 .vscode/
 
-*.docx ~$* *.png
+*.docx ~$* *.png*.docx
+~
+*.png

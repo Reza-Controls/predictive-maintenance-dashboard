@@ -13,5 +13,7 @@ sensor_data.db
 .DS_Store
 .vscode/
 
-*.docx ~$* 
+# Notes / temp files that shouldn't be in the repo
+*.docx
+~$*
 *.png

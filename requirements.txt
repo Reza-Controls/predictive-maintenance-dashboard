@@ -1,0 +1,5 @@
+pymodbus==3.6.9
+pandas
+streamlit
+plotly
+scikit-learn
